@@ -28,3 +28,14 @@ cp .env.example .env
 python manage.py makemigrations
 python manage.py migrate
 python manage.py runserver
+
+## Live API
+**Base URL:** `https://panafic-store.onrender.com` 
+
+All endpoints are live and working:
+- `POST /auth/register/`
+- `POST /auth/login/`
+- `GET /products/?currency=GHS`
+- `POST /cart/add/`
+- `POST /orders/checkout/`
+- `GET /rates/`

@@ -48,12 +48,3 @@ class User(AbstractUser):
     def __str__(self):
         return f"{self.email} ({self.role})"
 
-class RateCache(models.Model):
-    base_currency = models.CharField(max_length=3)
-    rates = models.JSONField()          # e.g. {"GHS": 0.047, "KES": 5.2, ...}
-    fetched_at = models.DateTimeField()
-    stale = models.BooleanField(default=False)
-
-    class Meta:
-        get_latest_by = 'fetched_at'
-        app_label = 'core_legacy'  # Avoid clash with rates.RateCache

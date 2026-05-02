@@ -35,11 +35,11 @@ class ProductListCreateView(generics.ListCreateAPIView):
         data = serializer.data
 
         if currency:
-            rates = RateService.get_cached_rates()
-            stale = rates.get('stale', False)
+            rates = RateService.get_cached_rates() or {}
+            stale = rates.get('stale', True)
             for item in data:
                 try:
-                    converted = RateService.convert_price(float(item['price']), item['currency'], currency)
+                    converted = RateService.convert_price(float(item['price']), item['currency'], currency, rates=rates)
                     item['converted_price'] = converted
                     item['stale'] = stale
                 except:
@@ -59,7 +59,11 @@ class ProductListCreateView(generics.ListCreateAPIView):
                 "message": "Product created successfully",
                 "product": ProductSerializer(product).data
             }, status=201)
-        return Response({"error": True, "message": "Validation error"}, status=400)
+        return Response({
+            "error": True,
+            "message": "Validation error",
+            "errors": serializer.errors
+        }, status=400)
 
 
 class ProductRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
@@ -81,10 +85,10 @@ class ProductRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 
         currency = request.query_params.get('currency')
         if currency:
-            rates = RateService.get_cached_rates()
-            stale = rates.get('stale', False)
+            rates = RateService.get_cached_rates() or {}
+            stale = rates.get('stale', True)
             try:
-                converted = RateService.convert_price(float(data['price']), data['currency'], currency)
+                converted = RateService.convert_price(float(data['price']), data['currency'], currency, rates=rates)
                 data['converted_price'] = converted
                 data['stale'] = stale
             except:
@@ -104,7 +108,11 @@ class ProductRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
                 "message": "Product updated successfully",
                 "product": serializer.data
             })
-        return Response({"error": True, "message": "Validation error"}, status=400)
+        return Response({
+            "error": True,
+            "message": "Validation error",
+            "errors": serializer.errors
+        }, status=400)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()

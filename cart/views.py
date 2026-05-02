@@ -53,8 +53,8 @@ class CartListView(generics.ListAPIView):
 
         customer_currency = request.user.base_currency
         total = 0.0
-        rates = RateService.get_cached_rates()
-        stale = rates.get("stale", False)
+        rates = RateService.get_cached_rates() or {}
+        stale = rates.get("stale", True)
         timestamp = rates.get("fetched_at")
 
         for item in data:
@@ -65,7 +65,8 @@ class CartListView(generics.ListAPIView):
                 converted_price = RateService.convert_price(
                     price_in_merchant_currency,
                     product_currency,
-                    customer_currency
+                    customer_currency,
+                    rates=rates
                 )
                 line_total = converted_price * item['quantity']
                 item['unit_price'] = converted_price

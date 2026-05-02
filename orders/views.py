@@ -28,6 +28,9 @@ class CheckoutView(generics.CreateAPIView):
 
         # 1. Lock the current rates (this is the critical part)
         locked_rates = RateService.get_cached_rates()
+        if locked_rates.get('stale') and len(locked_rates) <= 2: # Only 'fetched_at' and 'stale'
+             return Response({"error": True, "message": "Exchange rates are currently unavailable. Please try again later."}, status=503)
+
         customer_currency = request.user.base_currency
 
         # 2. Calculate totals
@@ -43,14 +46,19 @@ class CheckoutView(generics.CreateAPIView):
             converted_price = RateService.convert_price(
                 float(product.price),
                 merchant_currency,
-                customer_currency
+                customer_currency,
+                rates=locked_rates
             )
             line_total = converted_price * cart_item.quantity
             customer_total += line_total
 
             # Merchant payout (customer_total * rate customer → merchant)
-            merchant_rate = locked_rates[customer_currency][merchant_currency]
-            merchant_payout = round(line_total * merchant_rate, 2)
+            try:
+                merchant_rate = locked_rates[customer_currency][merchant_currency]
+                merchant_payout = round(line_total * merchant_rate, 2)
+            except KeyError:
+                # Fallback to 1:1 if rate is missing (should not happen with full matrix)
+                merchant_payout = round(line_total, 2)
 
             order_items_data.append({
                 'product': product,

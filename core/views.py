@@ -38,7 +38,7 @@ class RegisterView(APIView):
         return Response({
             "error": True,
             "message": "Validation error",
-            "field": list(serializer.errors.keys())[0] if serializer.errors else None
+            "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -74,5 +74,5 @@ class LoginView(APIView):
         return Response({
             "error": True,
             "message": "Validation error",
-            "field": list(serializer.errors.keys())[0]
+            "errors": serializer.errors
         }, status=400)

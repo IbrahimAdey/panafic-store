@@ -48,7 +48,10 @@ class RateService:
             return cache_data
         except Exception as e:
             print(f"❌ Rate API failed: {e}")
-            return None
+            return {
+                "fetched_at": timezone.now().isoformat(),
+                "stale": True
+            }
 
     @classmethod
     def get_cached_rates(cls):
@@ -59,7 +62,7 @@ class RateService:
 
         if timezone.now() - latest.fetched_at > timedelta(minutes=30):
             new_rates = cls.fetch_rates_from_api()
-            if new_rates:
+            if new_rates and not new_rates.get('stale'):
                 return new_rates
             # API down → mark as stale
             latest.stale = True
@@ -69,9 +72,11 @@ class RateService:
         return {**latest.rates, "stale": latest.stale}
 
     @classmethod
-    def convert_price(cls, price: float, from_currency: str, to_currency: str):
+    def convert_price(cls, price: float, from_currency: str, to_currency: str, rates=None):
         """Core conversion logic used by products"""
-        rates = cls.get_cached_rates()
+        if rates is None:
+            rates = cls.get_cached_rates()
+            
         if from_currency not in rates or to_currency not in rates[from_currency]:
             raise ValueError(f"No rate for {from_currency} → {to_currency}")
         rate = rates[from_currency][to_currency]
